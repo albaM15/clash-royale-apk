@@ -39,6 +39,7 @@ class CaptureService : Service() {
     private var reader: ImageReader? = null
     private var latest: Image? = null
     private var cachedJpeg: ByteArray? = null
+    private var hasFrame = false
     private var dirty = false
     private var width = 0
     private var height = 0
@@ -160,7 +161,7 @@ class CaptureService : Service() {
         display?.surface = null
         latest?.close(); latest = null
         reader?.close()
-        cachedJpeg = null; dirty = false
+        cachedJpeg = null; hasFrame = false; dirty = false
         width = w; height = h; reader = replacement
         display?.resize(w, h, resources.configuration.densityDpi)
         display?.surface = replacement.surface
@@ -183,14 +184,18 @@ class CaptureService : Service() {
             val timestamp = System.currentTimeMillis()
             try {
                 if (dirty && latest != null) {
+                    // null = la imagen no es de partida: no se comprime ni se envía.
                     cachedJpeg = encode(latest!!)
+                    hasFrame = true
                     dirty = false
                 }
                 synchronized(queue) {
                     if (!running.get()) return
                     val bytes = cachedJpeg
-                    if (bytes == null) {
+                    if (!hasFrame) {
                         Session.update { it.copy(dropped = it.dropped + 1, message = "Esperando imagen de la app compartida") }
+                    } else if (bytes == null) {
+                        Session.update { it.copy(outsideMatch = it.outsideMatch + 1, message = "Fuera de partida · captura omitida") }
                     } else if (localOnly) {
                         localStore.save(session, timestamp, bytes)
                         Session.update { it.copy(captured = it.captured + 1, savedLocally = it.savedLocally + 1,
@@ -213,7 +218,8 @@ class CaptureService : Service() {
         }
     }
 
-    private fun encode(image: Image): ByteArray {
+    /** Devuelve el JPEG de la captura, o null si no pertenece a una partida en curso. */
+    private fun encode(image: Image): ByteArray? {
         val plane = image.planes[0]
         check(plane.pixelStride == 4)
         val packed = java.nio.ByteBuffer.allocate(image.width * image.height * 4)
@@ -228,6 +234,7 @@ class CaptureService : Service() {
         val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
         try {
             bitmap.copyPixelsFromBuffer(packed)
+            if (!GameplayDetector.isInMatch(bitmap)) return null
             return ByteArrayOutputStream().use { out ->
                 check(bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out))
                 out.toByteArray()
@@ -348,7 +355,7 @@ class CaptureService : Service() {
             latest?.close(); latest = null
             display?.release(); display = null
             reader?.close(); reader = null
-            cachedJpeg = null
+            cachedJpeg = null; hasFrame = false
             projection?.unregisterCallback(callback)
             projection?.stop(); projection = null
             captureThread.quitSafely()
