@@ -1,0 +1,11 @@
+# Credenciales y configuración local
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+.aws/
+.codex/
+.agents/
+*.jks
+*.keystore
