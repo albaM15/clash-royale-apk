@@ -25,7 +25,7 @@ class MainActivity : Activity() {
         override fun run() {
             val s = Session.status
             status.text = getString(R.string.session_status, s.message, s.session, s.captured,
-                s.uploaded, s.pending, s.errors, s.dropped, s.timestamp, s.savedLocally)
+                s.uploaded, s.pending, s.errors, s.dropped, s.timestamp, s.savedLocally, s.outsideMatch)
             start.isEnabled = !s.active && !awaitingConsent
             localStart.isEnabled = !s.active && !awaitingConsent
             gallery.isEnabled = !s.active && !awaitingConsent
