@@ -94,6 +94,7 @@ class CaptureService : Service() {
             projection!!.registerCallback(callback, capture)
             if (localOnly) {
                 session = java.util.UUID.randomUUID().toString()
+                localStore.startSession(session)
                 Session.begin(session)
                 Session.update { it.copy(message = "Prueba local · sin subidas") }
                 startCapture()
