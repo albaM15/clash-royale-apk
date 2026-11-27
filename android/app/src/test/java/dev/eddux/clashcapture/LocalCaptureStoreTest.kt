@@ -19,15 +19,30 @@ class LocalCaptureStoreTest {
         assertArrayEquals(jpeg, second.readBytes())
         assertFalse(File(root, "capture.tmp").exists())
     }
-    @Test fun boundsStorageAcrossSessionsToThirtyImages() {
+    @Test fun keepsEveryCaptureOfAFullMatch() {
+        // Una partida con tiempo extra dura unos 300 s: deben quedar todas las capturas.
         val store = LocalCaptureStore(temporary.newFolder())
-        for (i in 1..35) {
-            val file = store.save("session-${i % 2}", i.toLong(), byteArrayOf(i.toByte()))
-            assertTrue(file.setLastModified(i.toLong()))
+        store.startSession("match")
+        for (i in 1..300) store.save("match", i.toLong(), byteArrayOf(i.toByte()))
+        assertEquals(300, store.list().size)
+    }
+    @Test fun newSessionRemovesPreviousSessions() {
+        val store = LocalCaptureStore(temporary.newFolder())
+        store.startSession("old")
+        for (i in 1..5) store.save("old", i.toLong(), byteArrayOf(1))
+        store.startSession("new")
+        store.save("new", 10, byteArrayOf(2))
+        assertEquals(listOf("new_10.jpg"), store.list().map { it.name })
+    }
+    @Test fun safetyCapKeepsTheMostRecentImages() {
+        val store = LocalCaptureStore(temporary.newFolder(), maxFiles = 50)
+        store.startSession("long")
+        for (i in 1..60) {
+            val file = store.save("long", i.toLong(), byteArrayOf(i.toByte()))
+            assertTrue(file.setLastModified(i * 1000L))
         }
-        val files = store.list()
-        assertEquals(30, files.size)
-        assertEquals((6..35).toSet(), files.map { it.nameWithoutExtension.substringAfterLast('_').toInt() }.toSet())
+        val kept = store.list().map { it.nameWithoutExtension.substringAfterLast('_').toInt() }.toSet()
+        assertEquals((11..60).toSet(), kept)
     }
     @Test(expected = IllegalArgumentException::class) fun rejectsPathsOutsidePrivateDirectory() {
         LocalCaptureStore(temporary.newFolder()).save("../escape", 1000, byteArrayOf())

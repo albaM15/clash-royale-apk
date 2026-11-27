@@ -10,7 +10,7 @@ object Session {
     data class Status(
         val active: Boolean = false, val session: String = "—", val captured: Int = 0,
         val uploaded: Int = 0, val errors: Int = 0, val dropped: Int = 0,
-        val savedLocally: Int = 0, val pending: Int = 0, val timestamp: Long = 0, val message: String = "Lista para iniciar"
+        val savedLocally: Int = 0, val pending: Int = 0, val outsideMatch: Int = 0, val timestamp: Long = 0, val message: String = "Lista para iniciar"
     )
     @Volatile var status = Status()
         private set

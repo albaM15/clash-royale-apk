@@ -25,7 +25,7 @@ class MainActivity : Activity() {
         override fun run() {
             val s = Session.status
             status.text = getString(R.string.session_status, s.message, s.session, s.captured,
-                s.uploaded, s.pending, s.errors, s.dropped, s.timestamp, s.savedLocally)
+                s.uploaded, s.pending, s.errors, s.dropped, s.timestamp, s.savedLocally, s.outsideMatch)
             start.isEnabled = !s.active && !awaitingConsent
             localStart.isEnabled = !s.active && !awaitingConsent
             gallery.isEnabled = !s.active && !awaitingConsent
@@ -87,7 +87,7 @@ class MainActivity : Activity() {
             setText(R.string.local_test)
             setOnClickListener { beginSession(localOnly = true) }
         }.also(box::addView)
-        label("La prueba local guarda hasta 30 JPEG en este teléfono y funciona sin conexión. Detén la sesión para ver las imágenes.")
+        label("La prueba local guarda en este teléfono todas las capturas de partida de la última sesión y funciona sin conexión. Detén la sesión para ver las imágenes.")
         gallery = Button(this).apply {
             setText(R.string.view_captures)
             setOnClickListener { startActivity(Intent(this@MainActivity, LocalCapturesActivity::class.java)) }

@@ -10,15 +10,15 @@ Consulta `../contexto-codex-android-clash-royale.md`, `README.md` y `VERIFICACIO
 
 - Usa Kotlin y conserva la estructura y las versiones del proyecto Android si ya existe. Mantén la interfaz en español.
 - Usa `MediaProjection` con consentimiento del usuario en cada sesión. Permite detener la captura mientras el juego está abierto. Libera los recursos cuando termine la sesión o Android revoque el permiso.
-- Captura un JPEG cada 1000 ms durante la sesión. Mantén la captura independiente de las demoras de red y conserva el identificador de sesión y la hora original de cada imagen al reintentar un envío.
+- Revisa la pantalla cada 1000 ms durante la sesión y guarda o sube solo las capturas de partida en curso (`GameplayDetector`: barra de elixir magenta en el 15 % inferior, misma regla que el notebook 02). Menús, cofres, "VS" y animaciones de inicio/fin se omiten y se cuentan como "Fuera de partida". Mantén la captura independiente de las demoras de red y conserva el identificador de sesión y la hora original de cada imagen al reintentar un envío.
 - No pidas tokens, contraseñas de infraestructura ni configuración de Cloudflare al público. La app obtiene y renueva una credencial temporal automáticamente. La URL de producción viene configurada y puede cambiarse en Configuración avanzada para pruebas.
 - Mantén las claves privadas fuera del repositorio, del APK y de los registros. `INGEST_SIGNING_KEY` es un secreto exclusivo del servidor; las credenciales temporales de sesión viven solo en memoria. No vuelvas a introducir el token estático manual del prototipo.
 - Coordina cualquier cambio del contrato de subida con la Pages Function del anotador, que vive en el repositorio `devEddu17x/deep-learning-clash-royale`. Mantén el destino `cr-videos` con el prefijo `ingest/`. El alcance de Android en esta entrega es captura y subida. AWS e inferencia corresponden a una etapa posterior.
-- Conserva la prueba local sin conexión, diferenciada del modo de subida. Captura hasta que se detenga la sesión, conservando únicamente los **30 JPEG más recientes entre todas las sesiones locales**. Treinta es el límite de retención local, no el número máximo de capturas ni de subidas a R2.
+- Conserva la prueba local sin conexión, diferenciada del modo de subida. Captura hasta que se detenga la sesión, guardando **todas las capturas de partida de la sesión actual** (`LocalCaptureStore`). Al iniciar una prueba local nueva se borran las sesiones locales anteriores. El único límite es un tope de seguridad de 1200 imágenes por si la sesión se deja abierta durante horas.
 
 ## Hecho
 
-- Proyecto Kotlin y Gradle Wrapper en `android/`, interfaz en español. Versión actual **1.2**, `versionCode = 3`, paquete `dev.eddux.clashcapture`.
+- Proyecto Kotlin y Gradle Wrapper en `android/`, interfaz en español. Versión actual **1.4**, `versionCode = 5`, paquete `dev.eddux.clashcapture`.
 - AGP 9.1.1, Gradle 9.3.1, Kotlin integrado en AGP, mínimo Android 8/API 26, compile SDK 37 y target SDK 36. Wrapper con comprobación SHA-256 de la distribución.
 - Captura implementada con `MediaProjection`, consentimiento por sesión, servicio en primer plano, parada desde la notificación y liberación de recursos al detener/revocar.
 - JPEG cada 1000 ms con reloj monotónico, proporción original, lado mayor máximo de 1280 px y calidad 85. Adaptación al tamaño compartido y rotación.
@@ -30,6 +30,8 @@ Consulta `../contexto-codex-android-clash-royale.md`, `README.md` y `VERIFICACIO
   - `api/ingest-session.js`: creación anónima y renovación de sesiones.
   - `api/ingest.js`: validación y subida del JPEG a R2.
 - Parche actualizado en `server/ingest.patch`. Añade los tres archivos en un checkout sin la versión anterior; si ya existen, revisar e integrar en lugar de aplicar el parche de archivos nuevos encima.
+- Versión **1.3**: filtro de partida en `GameplayDetector.kt`, aplicado antes de comprimir el JPEG, en la prueba local y en la subida. Pruebas en `GameplayDetectorTest.kt` con capturas reales (partida, "VS", cofre e inicio sin cartas) y el caso de 0 de elixir.
+- Versión **1.4**: la prueba local guarda todas las capturas de partida de la sesión (ya no solo las últimas 30) y borra las sesiones locales anteriores al iniciar una nueva.
 - Documentados compilación, instalación, configuración administrativa y pruebas en `README.md`; resultados detallados en `VERIFICACION.md`.
 
 ## Contrato actual de subida
@@ -45,7 +47,7 @@ Consulta `../contexto-codex-android-clash-royale.md`, `README.md` y `VERIFICACIO
 ## Verificado
 
 - Compilación de depuración y Lint: **BUILD SUCCESSFUL**, **0 errores y 7 avisos** de Lint (dos de versiones y cinco de textos del visor solo en español).
-- **3 pruebas JVM aprobadas**: bytes/timestamps originales, retención global de 30 imágenes y rechazo de rutas fuera del almacenamiento privado.
+- **Pruebas JVM del almacenamiento local**: bytes/timestamps originales, conservación de la sesión completa, borrado de sesiones anteriores, tope de seguridad y rechazo de rutas fuera del almacenamiento privado.
 - **16 pruebas del servidor aprobadas**, con JPEG real y R2 simulado: sesión anónima, renovación, integración sesión-subida, caducidad, firma alterada, aislamiento de sesiones, validación, tamaño y errores de almacenamiento.
 - `git apply --check` del parche actualizado aprobado sobre una carpeta sin las funciones anteriores.
 - APK 1.2 instalado correctamente en el Xiaomi conectado mediante ADB y actividad principal abierta. **Esto no confirma una sesión real de captura ni una subida a R2.**
@@ -55,7 +57,7 @@ Consulta `../contexto-codex-android-clash-royale.md`, `README.md` y `VERIFICACIO
 - Configurar en Cloudflare Pages `INGEST_SIGNING_KEY` y `CR_VIDEOS`, conservando D1, `ADMIN_TOKEN` y las rutas del anotador.
 - **Desplegar las funciones actualizadas** en `cr-annotator`. Se modificó el repositorio local, pero no se realizó despliegue remoto. Comprobar que las dos rutas llegan a las funciones y no al HTML del anotador ni a un middleware con autenticación administrativa.
 - Configurar límites de tráfico para las rutas públicas y una política de consumo/retención en R2 antes de distribuir a gran escala. No se implementaron cuotas por usuario ni acreditación de dispositivo.
-- Completar la prueba física local: consentimiento, Clash Royale abierto, JPEG legibles, intervalos cercanos a 1000 ms, parada desde la notificación, revocación por Android, rotación y retención de las últimas 30 imágenes. No consta una verificación de estas capturas por el agente.
+- Completar la prueba física local: consentimiento, Clash Royale abierto, JPEG legibles, intervalos cercanos a 1000 ms, parada desde la notificación, revocación por Android, rotación y conservación de todas las capturas de partida de la sesión. No consta una verificación de estas capturas por el agente.
 - Completar la prueba con Pages/R2: inicio automático sin token manual, subidas confirmadas, JPEG reales de la partida en `cr-videos/ingest/<sesión>/`, cadencia, reintentos tras desconexión, renovación y rechazo de credenciales inválidas sin crear objetos.
 - No se ha realizado ninguna subida real a R2 desde este entorno. La entrega completa sigue pendiente de esas pruebas de aceptación.
 - AWS, inferencia y modelo siguen fuera del alcance de esta entrega.

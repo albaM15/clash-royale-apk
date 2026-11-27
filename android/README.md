@@ -39,7 +39,7 @@ La versión 1.2 incluye **Probar captura sin conexión**. No necesita API, Inter
 3. Pulsa **Detener** en la notificación o **Detener sesión** en la app.
 4. Pulsa **Ver capturas locales**. Usa Anterior/Siguiente para revisar los JPEG, sus timestamps y el intervalo entre imágenes de la misma sesión (aproximadamente 1000 ms).
 
-Se conservan hasta **30 JPEG en total** en el almacenamiento privado de la app, eliminando los más antiguos. No se envían al servidor. El contador Guardadas localmente indica los guardados acumulados durante esa sesión; el visor muestra las imágenes retenidas. El visor solo se abre con la captura detenida. Puedes repetir la prueba sin conexión. Esta comprobación valida captura, consentimiento, parada, legibilidad y cadencia; la subida real sigue requiriendo el backend desplegado.
+Se guardan **todas las capturas de partida de la sesión** en el almacenamiento privado de la app (menús, cofres y pantallas de inicio/fin se omiten). Al iniciar una prueba local nueva se borran las de la sesión anterior. Hay un tope de seguridad de 1200 imágenes (unos 20 minutos de partida). No se envían al servidor. El contador Guardadas localmente indica los guardados acumulados durante esa sesión; el visor muestra las imágenes retenidas. El visor solo se abre con la captura detenida. Puedes repetir la prueba sin conexión. Esta comprobación valida captura, consentimiento, parada, legibilidad y cadencia; la subida real sigue requiriendo el backend desplegado.
 
 ## Configuración del servidor — solo el administrador
 
@@ -80,4 +80,4 @@ Captura en hilo propio cada 1000 ms con reloj monotónico, lado mayor hasta 1280
 node --test --test-isolation=none server/tests/ingest.test.mjs
 ```
 
-Tres pruebas JVM del almacenamiento local (bytes/timestamps originales, límite global de 30 imágenes y validación de rutas) y 16 pruebas del servidor con un JPEG real y R2 simulado, incluidas creación anónima, renovación, subida automática, expiración, firmas alteradas y aislamiento entre sesiones. Resultados de compilación y límites en `VERIFICACION.md`. Quedan pendientes el despliegue/configuración real de Cloudflare y las pruebas completas de captura/subida en teléfono. AWS e inferencia quedan fuera del alcance.
+Tres pruebas JVM del almacenamiento local (bytes/timestamps originales, conservación de la sesión completa, borrado de sesiones anteriores y tope de seguridad y validación de rutas) y 16 pruebas del servidor con un JPEG real y R2 simulado, incluidas creación anónima, renovación, subida automática, expiración, firmas alteradas y aislamiento entre sesiones. Resultados de compilación y límites en `VERIFICACION.md`. Quedan pendientes el despliegue/configuración real de Cloudflare y las pruebas completas de captura/subida en teléfono. AWS e inferencia quedan fuera del alcance.

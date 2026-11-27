@@ -2,7 +2,7 @@
     <string name="app_name">Captura Clash</string>
     <string name="start_session">Iniciar sesión</string>
     <string name="stop_session">Detener sesión</string>
-    <string name="session_status">%1$s\n\nSesión: %2$s\nCapturas: %3$d\nSubidas confirmadas: %4$d\nPendientes: %5$d\nErrores de envío: %6$d\nDescartadas: %7$d\nÚltima captura (ms): %8$d\nGuardadas localmente: %9$d</string>
+    <string name="session_status">%1$s\n\nSesión: %2$s\nCapturas: %3$d\nSubidas confirmadas: %4$d\nPendientes: %5$d\nErrores de envío: %6$d\nDescartadas: %7$d\nÚltima captura (ms): %8$d\nGuardadas localmente: %9$d\nFuera de partida (omitidas): %10$d</string>
     <string name="advanced_settings">Configuración avanzada</string>
     <string name="local_test">Probar captura sin conexión</string>
     <string name="view_captures">Ver capturas locales</string>
